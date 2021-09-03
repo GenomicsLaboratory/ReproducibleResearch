@@ -4,6 +4,10 @@ The Genetics and Applied Genomics Laboratory is committed to promoting and using
 
 In this repository you will find the data and codes to fully or partially reproduce the research carried out on the following research articles:
 
+2021
+nuevo paper
+
+
 2020.
 Commercial vaccines do not confer protection against two genetic strains of Piscirickettsia salmonis, LF-89-like and EM-90-like, in Atlantic salmon
 Carolina Figueroa, Débora Torrealba, Byron Morales-Lange, Luis Mercado, Brian Dixon, Pablo Conejeros, Gabriela Silva, Carlos Soto, José A. Gallardo
