@@ -4,8 +4,8 @@ The Genetics and Applied Genomics Laboratory is committed to promoting and using
 
 In this repository you will find the data and codes to fully or partially reproduce the research carried out on the following research articles:
 
-2021
-nuevo paper
+2021.
+RNA-Seq analysis and transcriptome assembly of Salicornia neei reveals a powerful system for ammonium detoxification.
 
 
 2020.
