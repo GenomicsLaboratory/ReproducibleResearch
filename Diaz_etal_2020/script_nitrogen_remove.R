@@ -11,7 +11,7 @@ library("data.table")
 getwd()
 setwd("C:/Users/usuario/Desktop")
 
-NO3_1 <- read_xlsx("Data.xlsx", sheet = 4)
+NO3_1 <- read_xlsx("Data_CW.xlsx", sheet = 4)
 NO3_1$Treatment <- as.factor(NO3_1$Treatment)
 NO3_1$Period <- as.factor(NO3_1$Period)
 summary(NO3_1)
