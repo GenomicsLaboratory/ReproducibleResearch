@@ -5,6 +5,9 @@ The Genetics and Applied Genomics Laboratory is committed to promoting and using
 In this repository you will find the data and codes to fully or partially reproduce the research carried out on the following research articles:
 
 2021.
+Carolina Figueroa, Débora Torrealba, Pamela Veloso, Frenkel Guisado-Bourzac, Anti Vasemägi, Mikhail Ozerov, Brian Dixon, Rodolfo Farlora, Pablo Conejeros, Carlos Soto, José A. Gallardo. Transcriptome profiling of the immune response of Atlantic Salmon with and without commercial vaccines challenged with Piscirickettsia salmonis. In preparation.
+
+
 Mónica Díaz-Silva, Jonathan Maldonado, Nicol Delgado, Pamela Veloso, Herman Silva, José A. Gallardo. RNA-Seq analysis and transcriptome assembly of Salicornia neei reveals powerful system for ammonium detoxification. https://biorxiv.org/cgi/content/short/2021.09.07.458783v1
 
 
