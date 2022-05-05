@@ -8,7 +8,7 @@ In this repository you will find the data and codes to fully or partially reprod
 Mónica Díaz-Silva, Jonathan Maldonado, Nicol Delgado, Pamela Veloso, Herman Silva, José A. Gallardo. RNA-Seq analysis and transcriptome assembly of Salicornia neei reveals powerful system for ammonium detoxification. https://biorxiv.org/cgi/content/short/2021.09.07.458783v1
 
 
-2020.
+2021.
 Carolina Figueroa, Débora Torrealba, Byron Morales-Lange, Luis Mercado, Brian Dixon, Pablo Conejeros, Gabriela Silva, Carlos Soto, José A. Gallardo. Commercial vaccines do not confer protection against two genetic strains of Piscirickettsia salmonis, LF-89-like and EM-90-like, in Atlantic salmon. bioRxiv 2021.01.07.424493; doi: https://doi.org/10.1101/2021.01.07.424493
 
 2020. 
