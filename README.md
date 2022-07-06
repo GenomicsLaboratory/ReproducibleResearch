@@ -4,8 +4,6 @@ The Genetics and Applied Genomics Laboratory is committed to promoting and using
 
 In this repository you will find the data and codes to fully or partially reproduce the research carried out on the following research articles:
 
-2022. Paula Valenzuela, Débora Torrealba, Carolina Figueroa, Byron Morales-Lange, Luis Mercado, Brian Dixon, Pablo Conejeros, José A. Gallardo. Why Piscirikettiosis vaccines so often fail?.
-
 
 2021.
 Mónica Díaz-Silva, Jonathan Maldonado, Nicol Delgado, Pamela Veloso, Herman Silva, José A. Gallardo. RNA-Seq analysis and transcriptome assembly of Salicornia neei reveals powerful system for ammonium detoxification. https://doi.org/10.1101/2021.09.07.458783
