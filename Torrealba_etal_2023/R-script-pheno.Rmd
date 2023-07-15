@@ -1,0 +1,452 @@
+---
+title: "R script data analysis and figures"
+subtitle: "Heritability of immunity traits and resistance of Atlantic salmon against the sea louse Caligus rogercresseyi"
+author:
+ name: Dr. José A. Gallardo and Débora Torrealba.
+ affiliation: Pontificia Universidad Católica de Valparaíso.
+ email: <jose.gallardo@pucv.cl>
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+  word_document: default
+  pdf_document: default
+---
+
+<style>
+#TOC {
+  color: black;
+  font-familiy: Calibri;
+  font-size: 14px;
+  border-color: #708090; 
+}
+body {
+   color: black;
+   font-familiy: Calibri;
+}
+
+pre {
+  color: black;
+  background-color: #F8F8FF;
+}
+# header {
+  color: #800000;
+  font-familiy: Calibri;
+  background-color: #F5F5F5;
+  opacity: 0.8;
+  font-size: 16px;
+}
+</style>
+---
+
+## Introducction
+
+Extensive research has been conducted on the immune response of Atlantic salmon to sea lice, yet the mechanisms underlying resistance in some fish and susceptibility in others remain unclear. This study aimed to assess the heritability of three key proteins associated with innate immunity and resistance in Salmo salar against the sea louse Caligus rogercresseyi. Specifically, the abundance of two pro-inflammatory cytokines, Tnfα and Il-8, along with an antioxidant enzyme, Nkef, was quantified in the skin and gill tissue of 21 families and 268 individuals using indirect ELISA. The study encompassed a wide range of parasite loads, ranging from low or resistant to high or susceptible.
+
+#### Experimental desing
+
+In this study, the researchers measured the abundances of three immune-related proteins (Nkef, Tnfα, and Il-8) in undamaged skin and gill tissues of Atlantic salmon. The samples were mechanically homogenized in lysis buffer and centrifuged, and the resulting supernatants were stored for further analysis. Total protein quantification was performed, and the samples were diluted and seeded in a Maxisorp plate. After overnight incubation and blocking, the plates were incubated with primary and secondary antibodies. The chromagen substrate TMB was added, and the reaction was stopped and measured at 450 nm. The production and validation of the antibodies were carried out based on previous studies.
+
+The heritable variation of the traits was estimated using a linear mixed model, considering fixed effects and covariables such as tank, body weight, and sessile lice. The magnitude of estimated heritability was classified as low, moderate, high, or very high based on predetermined thresholds. Statistical analysis included non-parametric tests and Pearson's correlation to assess the association between immunity traits and resistance traits. Familiar phenotypic correlation coefficients were also calculated.
+
+The software used for statistical analysis were GraphPad Prism 8.0 and R.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(lmtest)
+library(knitr)
+library(car)
+library(grid)
+library(gridExtra)
+library(cowplot)
+library(PerformanceAnalytics)
+library(onewaytests)
+library(lme4)
+library(nlme)
+library(lsmeans)
+library(coefplot)
+library(corrplot)
+```
+
+#### Import and delete outliers
+
+```{r, warning=FALSE}
+
+cal_im <- read_excel("Pedigre_Phenotypes_immuno_dat.xlsx", sheet = 1, col_types = c("guess", "guess","guess","guess","guess","guess","guess","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric","numeric"))
+cal_im$Animal<-as.factor(cal_im$Animal)
+cal_im$Sire<-as.factor(cal_im$Sire)
+cal_im$Dam<-as.factor(cal_im$Dam)
+cal_im$Pit <- as.factor(cal_im$Pit)
+cal_im$Family <- as.factor(cal_im$Family)
+cal_im$Tank<-as.factor(cal_im$Tank)
+cal_im$Group<-as.factor(cal_im$Group)
+
+
+# Delete outliers
+
+is.na(cal_im$IL8gill0) <- cal_im$IL8gill0 ==0
+
+is.na(cal_im$IL8skin0) <- cal_im$IL8skin0 ==0
+
+is.na(cal_im$IL8skin0) <- cal_im$IL8skin0 >700
+
+is.na(cal_im$TNFskin0) <- cal_im$TNFskin0 >500
+
+is.na(cal_im$NKEFgill0) <- cal_im$NKEFgill0 >5.9
+
+is.na(cal_im$NKEFskin0) <- cal_im$NKEFskin0 >14
+
+summary(cal_im)
+```
+
+## Exploratory data analysis: Sea lice boxplot
+
+```{r, warning=FALSE, }
+
+cal_a <- cal_im %>% 
+  ggplot(aes(x=Sessile_lice))+
+  geom_histogram(color="black", fill="Light blue", binwidth = 11)+
+  labs(y="Frecuency", x="Number of sessile lice", subtitle="Number of sessile sea lice")+
+   theme_minimal(base_size = 10)
+
+cal_b <- cal_im %>%
+  ggplot(aes(x=reorder(Family,Sessile_lice,median, na.rm = TRUE), y=Sessile_lice, fill=Family)) +
+  geom_boxplot() +
+  labs(y="Number of sessile lice", x="Family", 
+       subtitle="Sea lice variation by family") +
+  theme_minimal(base_size = 10) +
+  theme(legend.position = "none")
+
+plot_lice <- plot_grid(cal_a, cal_b, labels = c('A', 'B'), ncol = 1)
+plot_lice
+ggsave("Figure 1.tiff", plot_lice, units="in", width=5, height=5, dpi=300, compression = 'lzw', )
+
+
+```
+
+## Exploratory data analysis: Immunity traits 
+
+### Histograms
+
+```{r, message=FALSE, warning=FALSE}
+
+My_Theme = theme(panel.grid.minor = element_blank(),
+  axis.title.x = element_text(size = 8),
+  axis.text.x = element_text(size = 8),
+  axis.title.y = element_text(size = 8),
+  axis.text.y = element_text(size = 8))
+
+
+imm_a <- cal_im %>% 
+  ggplot(aes(x=IL8gill0))+
+  geom_histogram(color="black", fill="yellow", binwidth = 50)+
+  labs(title="Il8 Gill")+
+  My_Theme+
+  scale_x_continuous(breaks = c(0, 200, 400,600))+
+  xlab(expression("Protein expression "(~ng * mu * L^-1)))
+
+imm_b <- cal_im %>% 
+  ggplot(aes(x=TNFgill0))+
+  geom_histogram(color="black", fill="Green", binwidth = 50)+
+  labs(title="Tnfa Gill")+
+   My_Theme+
+  scale_x_continuous(breaks = c(0, 200, 400))+
+  xlab(expression("Protein expression "(~ng * mu * L^-1)))
+
+imm_c <- cal_im %>% 
+  ggplot(aes(x=NKEFgill0))+
+  geom_histogram(color="black", fill="Light blue", binwidth = 0.75)+
+  labs(title="Nkef Gill")+
+   My_Theme+
+  scale_x_continuous(breaks = c(0, 2, 4, 6))+
+  xlab(expression("Protein expression "(~ng * mu * L^-1)))
+
+imm_d <- cal_im %>% 
+  ggplot(aes(x=IL8skin0))+
+  geom_histogram(color="black", fill="yellow", binwidth = 60)+
+  labs(title="Il8 Skin")+
+   My_Theme+
+  scale_x_continuous(breaks = c(0, 200, 400,600))+
+  xlab(expression("Protein expression "(~ng * mu * L^-1)))
+
+imm_e <- cal_im %>% 
+  ggplot(aes(x=TNFskin0))+
+  geom_histogram(color="black", fill="Green", binwidth = 60)+
+  labs(title="Tnfa Skin")+
+   My_Theme+
+  scale_x_continuous(breaks = c(0, 200, 400))+
+  xlab(expression("Protein expression "(~ng * mu * L^-1)))
+
+imm_f <- cal_im %>% 
+  ggplot(aes(x=NKEFskin0))+
+  geom_histogram(color="black", fill="Light blue", binwidth = 1.5)+
+  labs(title="Nkef Skin")+
+  My_Theme+
+  scale_x_continuous(breaks = c(0, 2, 4, 6,8,10,12))+
+  xlab(expression("Protein expression "(~ng * mu * L^-1)))
+
+plot_Immune <- plot_grid(imm_a, imm_b, imm_c, imm_d, imm_e, imm_f, labels = c('A', 'B', "C", "D", "E", "F"), nrow = 2)
+plot_Immune 
+ggsave("Supplementary figure 2.tiff", plot_Immune , units="in", width=5.5, height=4, dpi=300, compression = 'lzw', )
+
+```
+
+### Boxplots
+
+```{r, message=FALSE, warning=FALSE}
+fam_a <- cal_im %>%
+  ggplot(aes(x=reorder(Family,IL8gill0,median, na.rm = TRUE), y=IL8gill0, fill=Family)) +
+  geom_boxplot() +
+  labs(y=expression("Protein expression "(~ng * mu * L^-1)), x="Family", 
+       subtitle="Il8 Gill by family") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+
+
+fam_b <- cal_im %>%
+  ggplot(aes(x=reorder(Family,TNFgill0,median, na.rm = TRUE), y=TNFgill0, fill=Family)) +
+  geom_boxplot() +
+  labs(y=expression("Protein expression "(~ng * mu * L^-1)), x="Family", 
+       subtitle="Tnfa Gill by family") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+
+fam_c <- cal_im %>%
+  ggplot(aes(x=reorder(Family,NKEFgill0,median, na.rm = TRUE), y=NKEFgill0, fill=Family)) +
+  geom_boxplot() +
+  labs(y=expression("Protein expression "(~ng * mu * L^-1)), x="Family", 
+       subtitle="Nkef Gill by family") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+
+fam_d <- cal_im %>%
+  ggplot(aes(x=reorder(Family,IL8skin0,median, na.rm = TRUE), y=IL8skin0, fill=Family)) +
+  geom_boxplot() +
+  labs(y=expression("Protein expression "(~ng * mu * L^-1)), x="Family", 
+       subtitle="Il8 Skin by family") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+
+fam_e <- cal_im %>%
+  ggplot(aes(x=reorder(Family,TNFskin0,median, na.rm = TRUE), y=TNFskin0, fill=Family)) +
+  geom_boxplot() +
+  labs(y=expression("Protein expression "(~ng * mu * L^-1)), x="Family", 
+       subtitle="Tnfa Skin by family") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+
+fam_f <- cal_im %>%
+  ggplot(aes(x=reorder(Family,NKEFskin0,median, na.rm = TRUE), y=NKEFskin0, fill=Family)) +
+  geom_boxplot() +
+  labs(y=expression("Protein expression "(~ng * mu * L^-1)), x="Family", 
+       subtitle="Nkef Skin by family") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+
+plot_fam <- plot_grid(fam_a, fam_b, fam_c, labels = c('A', 'B', "C"), ncol = 1)
+plot_fam
+
+ggsave("Figure 2.tiff", plot_fam, units="mm", width=183, height=243, dpi=300, compression = 'lzw', )
+
+plot_fam2 <- plot_grid(fam_d, fam_e, fam_f, labels = c("A", "B", "C"), ncol = 1)
+plot_fam2
+
+ggsave("Figure 3.tiff", plot_fam2, units="mm", width=183, height=243, dpi=300, compression = 'lzw', )
+
+getwd()
+```
+
+## Phenotypic correlations between sea lice and immunity traits: individual levels.
+
+```{r, warning=FALSE}
+par(mfrow = c(1, 1))
+
+my_data <- cal_im[, c(10,11,12,13,14,15,16)]
+
+# print the first 6 rows
+head(my_data, 6)
+
+res <- cor(my_data, use="complete.obs", method = c("spearman"))
+round(res, 2)
+
+chart.Correlation(my_data, histogram=FALSE, pch=19, method = c("spearman"))
+
+```
+
+## Phenotypic correlations between sea lice and immunity traits: familiar levels.
+
+```{r, warning=FALSE}
+par(mfrow = c(1, 1))
+
+cal_im_fam <- read_excel("Pedigre_Phenotypes_immuno_dat.xlsx", sheet = 2, col_types = c("numeric"))
+
+my_data_fam <- cal_im_fam[, c(2,3,4,5,6,7,8)]
+
+res_fam <- cor(my_data_fam, use="complete.obs", method = c("spearman"))
+round(res_fam, 2)
+
+chart.Correlation(my_data_fam, histogram=TRUE, pch=19, method =c("spearman"))
+```
+
+
+```{r}
+corrplot2 <- function(data,
+                      method = "pearson",
+                      sig.level = 0.05,
+                      order = "original",
+                      diag = FALSE,
+                      type = "upper",
+                      tl.srt = 90,
+                      number.font = 1,
+                      number.cex = 1,
+                      mar = c(0, 0, 0, 0)) {
+
+  data_incomplete <- data
+  data <- data[complete.cases(data), ]
+  mat <- cor(data, method = method)
+  cor.mtest <- function(mat, method) {
+    mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p.mat <- matrix(NA, n, n)
+    diag(p.mat) <- 0
+    for (i in 1:(n - 1)) {
+      for (j in (i + 1):n) {
+        tmp <- cor.test(mat[, i], mat[, j], method = method)
+        p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+      }
+    }
+    colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+    p.mat
+  }
+  p.mat <- cor.mtest(data, method = method)
+  col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+  corrplot(mat,
+    method = "color", col = col(200), number.font = number.font,
+    mar = mar, number.cex = number.cex,
+    type = type, order = order,
+    addCoef.col = "black", # add correlation coefficient
+    tl.col = "black", tl.srt = tl.srt, # rotation of text labels
+    # combine with significance level
+    p.mat = p.mat, sig.level = sig.level, insig = "blank",
+    # hide correlation coefficients on the diagonal
+    diag = diag
+  )
+}
+
+# edit from here
+tiff(filename = "Supplementary figure 3.tiff", units= "mm", width=183, height=247, res = 300)
+corrplot2(
+  data = my_data_fam,
+  method = "pearson",
+  sig.level = 0.05,
+  order = "original",
+  diag = FALSE,
+  type = "upper",
+  tl.srt = 75
+)
+
+dev.off()
+
+```
+
+
+## Lineal model: Ancova 
+
+### Sea lice
+
+```{r}
+
+lmSL <- lm(cal_im$Sessile_lice ~ cal_im$Tank + cal_im$Family + cal_im$Body_weight_grams)
+anova(lmSL)
+
+```
+
+### IL8 Gills
+```{r}
+
+# Linear model
+
+lmIL8gill0 <- lm(cal_im$IL8gill0 ~ cal_im$Group + cal_im$Tank + cal_im$Family + cal_im$Sessile_lice + cal_im$Body_weight_grams)
+
+anova(lmIL8gill0)
+
+# "Susceptible" v/s "Resistant"
+
+IL8_Gills <- cal_im %>% filter(Group %in% c("Susceptible", "Resistant"))
+
+lm_IL8_Gills <- lm(IL8_Gills$IL8gill0 ~ IL8_Gills$Group * IL8_Gills$Tank)
+
+anova(lm_IL8_Gills)
+
+# Anova assumptions: Normality
+plot(lm_IL8_Gills)
+aov_residuals <- residuals(object = lm_IL8_Gills)
+hist(x= aov_residuals, main = "Histogram of residuals")
+shapiro.test(x= aov_residuals)
+# Plots and Shapiro shown deviations from normality.
+
+# Homoscedasticity 
+# Null hypothesis: All groups have equal variances.
+LT_IL8_Gills <- leveneTest(IL8_Gills$IL8gill0 ~ IL8_Gills$Group * IL8_Gills$Tank)
+# leveneTest dont shown deviations from Homoscedasticity
+
+# Welch's test, cuando no hay homogeneidad de las varianzas
+
+library(onewaytests)
+welch.test(IL8gill0~ Group, IL8_Gills, 
+           rate = 0, alpha = 0.05, na.rm = TRUE, verbose = TRUE)
+
+kruskal.test(IL8gill0 ~ Group, IL8_Gills)
+
+# Post-hoc test
+
+ggplot(data = IL8_Gills, aes(x = Group, y = IL8gill0)) + geom_boxplot()
+
+TukeyHSD(aov(IL8gill0~Group, data=IL8_Gills))
+
+```
+
+
+### Run multiple lm model
+
+```{r}
+# Crea ventor con variables predicoras
+predictors <- c("Sessile_lice", "IL8gill0", "TNFgill0", "NKEFgill0", "IL8skin0","TNFskin0", "NKEFskin0")
+
+# Crea lista con total de modelos a ejecutar
+Immune_model <- vector('list', length(predictors))
+
+# Nombra modelos con variables predictoras
+names(Immune_model) <- predictors
+
+# Run multiple lm models
+for (predictor in predictors) {
+
+  # with paste
+model <- lm(formula = paste0(predictor, "~ cal_im$Tank + cal_im$Family + cal_im$Body_weight_grams"), data = cal_im)
+  
+  # summary of model
+    Immune_model[[predictor]] <- model
+}
+
+```
+
+```{r}
+summary(aov(Immune_model[["Sessile_lice"]]))
+summary(aov(Immune_model[["IL8gill0"]]))
+summary(aov(Immune_model[["TNFgill0"]]))
+summary(aov(Immune_model[["NKEFgill0"]]))
+summary(aov(Immune_model[["IL8skin0"]]))
+summary(aov(Immune_model[["TNFskin0"]]))
+summary(aov(Immune_model[["NKEFskin0"]]))
+```
+
+
+
