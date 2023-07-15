@@ -4,7 +4,10 @@ The [Genetics and Applied Genomics Laboratory](https://genomics.pucv.cl/) is com
 
 In this repository you will find the data and codes to fully or partially reproduce the research carried out on the following research articles:
 
-2023
+
+2023. 
+Débora Torrealba, Byron Morales-Lange, Victoriano Mulero, Anti Vasemägi, Luis Mercado, José Gallardo-Matus
+Heritability of immunity traits and resistance of Atlantic salmon against the sea louse *Caligus rogercresseyi*
 
 
 2022.
